@@ -1,0 +1,109 @@
+---
+title: "Lab_Assignment_1_by_Yiqiu_Wang"
+author: "Yiqiu Wang"
+date: "2023-01-25"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(modelsummary)
+```
+
+
+```{r,include=FALSE}
+# Load the titanic packages we need
+library(titanic)
+# We will use titanic_train. Name our data set "titanic"
+titanic <- titanic_train
+str(titanic)
+```
+
+# A Table 1
+
+```{r}
+# We can create a new variable named ""Southampton" including the information about whether a passenger embarked from Southampton by using mutate()
+# We need it to be 1 if the passenger embarked from Southampton and 0 otherwise. We can do this with as.numeric()
+# Update our data set
+titanic <- titanic |> 
+  mutate(Southampton = as.numeric(Embarked == "S"))
+
+# Make a table with descriptive statistics for the variables: Sex, Age, Survived, Pclass and Southampton
+# With information on min, max, mean, SD, and number of observations(N) for the continuous variables and dummy variables and also information on number of observations(N) and the distribution over the categories in percent for the categorical variables
+# Pclass is an integer and is treated as continuous variable in the model (We know this by running str(titanic))
+# So we need to change it to a factor variable by using as_factor()
+datasummary(Age+Survived+Southampton+(`Pclass` = as_factor(Pclass))+Sex+1 ~ Min + Max + Mean + SD + N +Percent(),
+            data = titanic,
+            title = "Passengers on the Titanic: Descriptive Statistics",
+            notes = c("Source: Titanic R pachage.",
+                      "Comments: Pclass refers to passenger class with 1 for the first class,","2 for the second class and 3 for the third class. Southampton indicates","whether a passenger embarked from Southampton(=1 and 0 otehwise).")) 
+```
+|     Table 1 reports the descriptive statistics on the passengers on the Titanic.
+
+|     There were a total of 891 passengers on Titanic of which 35.24%(314) were female and 64.76%(577) were male.
+
+|     Due to missing data, the age of 714 passengers were accessible. The recorded ages ranged from 0.42 to 80. The average age of the 714 passengers was 29.70. The standard deviation is smaller than the mean which indicates that the ages of many passengers on Titanic were not spread too far from 30 (the ages are clustered near the mean).
+
+|     38% of all passengers survived the ship crash.
+
+|     24.24%(216) of all 891 passengers were of the first class, 20.65%(184) of all passengers were of the second class and 55.11%(491) of all passengers were of the third class. 
+
+|     The majority(72%) of all passengers embarked from Southampton.
+
+
+# B Table 2
+
+```{r}
+# Create a dummy variable named "female" which indicates whether a passenger is a female(=1) or a male(=0) by using mutate() and as.numeric()
+# Estimate a linear probability model with survival as dependent and age and  female as independent variables
+# Name it "survive_lpm_1"
+survive_lpm_1 <- titanic |> 
+  mutate(female = as.numeric(Sex == "female")) |> 
+  lm(Survived ~ Age + female, data =_)
+
+# Estimate a second model where passenger class and Southampton as independent variables as well. So now we have four independent variabels (Age, female, Pclass and Southampton)
+# Name it "survive_lpm_2"
+# Change Pclass to a factor variable
+survive_lpm_2 <- titanic |> 
+  mutate(Pclass = as_factor(Pclass),
+         female = as.numeric(Sex == "female")) |> 
+  lm(Survived ~ Age + female + Pclass + Southampton, data =_)
+
+# Put the two estimated models into one table
+models <- list(
+  "Model A" = survive_lpm_1,
+  "Model B" = survive_lpm_2
+  )
+
+modelsummary(models, fmt = 2,
+             stars = TRUE,
+             gof_omit = "Log.Lik.&F&RMSE",
+             title = "Survival from Titanic. Linear probability models",
+             notes = list("Source: Titanic R package.", 
+                          "Comments: Age equals to 0 is the reference category. female refers to the gender of a","passenger which equals to 1 for female and 0 for male, male is the reference category.","Pclass refers to passenger class with 1 for the first class, 2 for the second class and 3 for","the third class, first class is the reference category. Southampton indicates whether a","passengerembarked from Southampton(=1 and 0 otherwise).")) 
+```
+
+|     We ran two linear probability models to estimate the expected survival probability on Titanic.
+
+|     The results of Model A shows that the expected likelihood of survival for a 0-year-old, male passenger was 23%. A passenger's age had no significant effect on his/her probability of survival. Being a female significantly increased a passenger's probability of survival by .55, which means that regardless of her age, a female passenger's expected likelihood to survive the ship crash was 78%. Women's expected probability of survival was about 3 times as high as that of men.
+
+|     In conclusion, female passengers were indeed much more likely to survive than male passengers. However, children and adults of the same gender had the same probability of survival. So sadly, children were not benefiting from "women and children first".
+
+|     As we add two more variables, passenger class and embarkation location, to the model, the results of Model B appears to be different from those of Model A.
+
+|     The results of Model B shows that the expected probability of survival for a 0-year-old, male, first class passenger was 68%. A one-year increase in age lowered this probability by .01, holding all other variables constant, which means children were more advantaged than adults. Being a female increased this probability of survival by .48, holding all other variables constant, which means women were more advantaged than men. However, being of a second class lowered a passenger's chance to survive by .19 and being of a third class lowered the chance by .39, holding all other variables constant. A passenger's embarkation location had a negative but insignificant effect on the survival likelihood so a passenger would not benefit or suffer from whether he/she embarked from Southampton or not. 
+
+|     A woman of the first class was at least 19% more likely to survive than another woman of the second or third class who was as old as her. A 20-year-old, first class male and a 29-year-old, third class female had the same probability of survival. So just being one year younger than 20 could make this man more likely to survive than that woman.
+
+|     In conclusion, only if the passengers were of the same class in Model B can we say that children were indeed more likely to survive than adults and women were more likely to survive than men so a 0-year-old girl (if there should be one) was expected to enjoy the highest probability of survival (though the probability is over 1). This did not happen in reality. Passenger class could possibly play a greater role than age and gender on the survival probability, especially when the advantage of being a female was reduced to some extent because of age. To our disappoint, passenger class served as an obstacle when people were trying to save as many women and children as possible after saying “women and children first”.
+
+|     R-squared increases from 0.291 in Model A to 0.392 in Model B, but this does not necessarily indicate a better model fit as the model fit could look better only because we are including more variables.
+
+|     The adjusted R-squared increases from 0.289 in Model A to 0.388 in Model B. This indicates a better model fit because the adjusted R-squared would not increase when the variables in the model does not provide the model fit by a sufficient amount. So Model A is biased because we neglected the variable Pclass which had significant effect on the probability of survival.
+
+
+
+
+
+
