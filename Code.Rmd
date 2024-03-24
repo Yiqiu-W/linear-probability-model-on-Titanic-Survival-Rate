@@ -1,6 +1,6 @@
 ---
-title: "Lab_Assignment_1_by_Yiqiu_Wang"
-author: "Yiqiu Wang"
+title: "XXX"
+author: "XXX"
 date: "2023-01-25"
 output: pdf_document
 ---
